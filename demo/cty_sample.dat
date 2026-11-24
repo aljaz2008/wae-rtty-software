@@ -1,0 +1,40 @@
+Slovenia:                 15:  28:  EU:   46.00:   -14.00:    -1.0:  S5:
+    S5;
+Fed. Rep. of Germany:     14:  28:  EU:   51.00:   -10.00:    -1.0:  DL:
+    DA,DB,DC,DD,DE,DF,DG,DH,DI,DJ,DK,DL,DM,DN,DO,DP,DQ,DR;
+Croatia:                  15:  28:  EU:   45.18:   -15.30:    -1.0:  9A:
+    9A;
+Austria:                  15:  28:  EU:   47.33:   -13.33:    -1.0:  OE:
+    OE;
+Italy:                    15:  28:  EU:   42.82:   -12.58:    -1.0:  I:
+    I;
+Sicily:                   15:  28:  EU:   37.50:   -14.00:    -1.0:  *IT9:
+    IT9,IB9,ID9,IE9,IF9,IG9,II9,IO9,IQ9,IR9,IT9,IU9,IW9,IY9;
+United States:            05:  08:  NA:   37.53:    91.67:     5.0:  K:
+    AA,AB,K,N,W,=VE3XYZ/W;
+Canada:                   05:  09:  NA:   44.35:    78.75:     5.0:  VE:
+    VA,VE,VO,VY;
+Japan:                    25:  45:  AS:   36.40:  -138.38:    -9.0:  JA:
+    JA,JE,JF,JG,JH,JI,JJ,JK,JL,JM,JN,JO,JP,JQ,JR,JS,7J,7K,7L,7M,7N,8J,8N;
+Brazil:                   11:  15:  SA:  -10.00:    53.00:     3.0:  PY:
+    PP,PQ,PR,PS,PT,PU,PV,PW,PX,PY,ZV,ZW,ZX,ZY,ZZ;
+Asiatic Russia:           17:  30:  AS:   55.88:   -84.08:    -7.0:  UA9:
+    UA9,RA9,R9,RU9,UA0(19)[25]<62.0/-130.0>;
+Canary Islands:           33:  36:  AF:   28.32:    15.85:     0.0:  EA8:
+    EA8,EB8;
+Spain:                    14:  37:  EU:   40.32:     3.43:    -1.0:  EA:
+    EA,EB,EC,ED,EE,EF,EG,EH;
+Hungary:                  15:  28:  EU:   47.12:   -19.28:    -1.0:  HA:
+    HA,HG;
+Australia:                30:  55:  OC:  -23.70:  -132.33:   -10.0:  VK:
+    AX,VH,VI,VJ,VK,VL,VM,VN,VZ;
+England:                  14:  27:  EU:   52.77:     1.47:     0.0:  G:
+    2E,G,M;
+Denmark:                  14:  18:  EU:   56.00:   -10.00:    -1.0:  OZ:
+    5P,5Q,OU,OV,OZ;
+France:                   14:  27:  EU:   46.00:    -2.00:    -1.0:  F:
+    F,HW,HX,HY,TH,TM,TO,TP,TQ,TV,TW,TX;
+Israel:                   20:  39:  AS:   31.32:   -34.82:    -2.0:  4X:
+    4X,4Z;
+Poland:                   15:  28:  EU:   52.28:   -18.67:    -1.0:  SP:
+    3Z,HF,SN,SO,SP,SQ,SR;

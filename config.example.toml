@@ -1,0 +1,172 @@
+# =============================================================================
+#  WAE RTTY Intel — configuration
+#  Copy this file to config.toml and change at least [station] call and grid.
+#  Everything else has sensible defaults; delete any section you don't need.
+#  Check the result with:   python wae_intel.py --check
+# =============================================================================
+log_level = "INFO"               # DEBUG / INFO / WARNING
+
+[station]
+call = "N0CALL"                  # the call you transmit (e.g. a club call)
+grid = "JN76GB"                  # your Maidenhead locator (4 or 6 characters)
+# Other calls you may appear under on the scoreboard, e.g. the operator call when you
+# operate a club station and the scoreboard shows "S51A (S58Q)".
+aliases = []
+# login_call = "N0CALL"          # call used to log in to RBN/clusters (defaults to call)
+
+[contest]
+# "auto" = WAE DX Contest RTTY of this year: 2nd full weekend of November,
+# Saturday 00:00 UTC to Sunday 23:59 UTC. Or give explicit ISO times.
+start_utc = "auto"
+end_utc   = "auto"
+max_operating_hours = 36         # single-operator limit
+min_off_minutes = 60             # minimum length of an off period
+
+[analysis]
+window_min = 15                  # heatmap / "who hears me" window
+sector_deg = 30                  # beam sector width (360 must divide by it: 15, 20, 30, 45)
+near_km = 1200                   # skimmers this close to you = "what I can hear"
+far_km = 2500                    # skimmers this far = "the path out of Europe is open"
+local_km = 400                   # skimmers closer than this hear you by ground wave: ignored for direction
+alert_max_age_min = 10           # spots older than this drop out of alerts / targets
+# Band ranking uses WAE scoring: score = (QSOs + QTCs) x weighted mults.
+# Until you have operated 3 h, these guesses of your FINAL totals set how much a mult is worth.
+# Use your result from last year.
+expected_final_points = 2500     # QSOs + QTCs
+expected_final_wmults = 800      # sum of mults x band weight (80m x4, 40m x3, others x2)
+qtc_value = 0.3                  # one QTC vs one QSO, in operating-time terms
+mult_decay_hours = 8.0           # projection: how fast your mult rate fades
+rtty_only = true                 # alerts/targets: RTTY stations only
+propagation_all_modes = true     # heatmap also uses CW skimmer data (many more CW skimmers)
+# Used to classify cluster spots that don't say which mode they are (kHz).
+rtty_segments = [[3560, 3600], [7025, 7100], [14060, 14098.9], [14101.1, 14150],
+                 [21060, 21150], [28060, 28200]]
+
+[files]
+cty = "cty.dat"                  # Big CTY cty.dat from https://www.country-files.com
+qtc_ledger = "qtc_ledger.json"   # manual QTC entries are saved here
+skimmers_csv = "skimmers.csv"    # optional: CALL,GRID per line for precise skimmer locations
+
+[web]
+host = "127.0.0.1"               # "0.0.0.0" to open the dashboard from a phone/tablet on your LAN
+port = 8073
+push_seconds = 5
+
+[n1mm]
+udp_enabled = true               # N1MM: Config > Configure Ports > Broadcast Data: tick Radio + Contacts
+udp_host = "0.0.0.0"
+udp_port = 12060                 #   ... and set the address to 127.0.0.1:12060
+# N1MM's log database, read-only. "auto" picks the .s3db in Documents\N1MM Logger+\Databases
+# that contains this contest. Or give the full path in single quotes:
+# db_path = 'C:\Users\you\Documents\N1MM Logger+\Databases\WAE_RTTY_2026.s3db'
+db_path = "auto"
+db_poll_seconds = 10
+db_mode = "direct"               # "copy" = read a copy of the file (no locking at all on N1MM's file)
+contest_like = "WAE%"            # N1MM contest name filter (WAE RTTY is "WAERTTY")
+
+[n1mm.qtc]
+# QTC table auto-detection. Only set these if `python wae_intel.py --inspect-db` shows a wrong guess.
+# table = "QTCs"
+# call_col = "Call"
+# dir_col = "IsReceived"
+# time_col = "TS"
+
+[control]
+# Click a station in the dashboard -> N1MM tunes the radio (N1MM listens on UDP 13064).
+qsy_on_click = true
+n1mm_host = "127.0.0.1"
+n1mm_port = 13064
+radio_nr = "active"              # or 1 / 2 for SO2R
+qsy_offset_khz = 0.0             # if clicks land a little off the signal (AFSK), put the error here
+block_while_transmitting = true  # never QSY or turn the beam while N1MM reports TX
+# Optional beam turning: "none" | "pstrotator" (UDP 12000) | "n1mmrotor" (UDP 12040)
+rotator = "none"
+rotator_host = "127.0.0.1"
+# rotator_port = 12000
+rotator_name = ""                # N1MM Rotor: the rotor name as defined there
+rotate_on_click = false          # true = clicking a station also turns the beam (short path)
+
+[scoreboard]
+# Contest Online Scoreboard page for WAE DX RTTY (contest_id 101). "" disables standings.
+url = "https://contestonlinescore.com/scoreboard/?contest_id=101"
+poll_seconds = 60
+# Your class as written in the scoreboard section headers; all words must appear, "S/O" = "SO".
+# "SO HP" matches "SO-ALL HP DIGI", "S/O HP", "SO AB HP" (single-band classes need a band, e.g. "SO 20 HP").
+category = ""
+rival_duty_cycle = 0.75          # assumed share of remaining time others operate (their projection)
+
+[rivals]
+calls = []                       # always-tracked rivals, e.g. ["DL1ABC", "9A1A"]
+auto = true                      # also pull rivals from the scoreboard (your category):
+auto_top = 5                     #   the top N
+auto_around = 3                  #   + N stations directly above and below you
+
+[solar]
+url = "https://www.hamqsl.com/solarxml.php"   # "" to disable
+
+[hamqth]
+# Optional free account at https://www.hamqth.com: precise locations for rivals, clicked calls, skimmers
+user = ""
+password = ""
+lookup_skimmers = true
+
+# -----------------------------------------------------------------------------
+# Telnet spot feeds. Each one is independent and reconnects by itself; the same spot
+# from several feeds is counted once. If a feed stays on "retry", set enabled = false.
+# If you delete all [[feeds]] blocks, a built-in default list is used.
+# -----------------------------------------------------------------------------
+[[feeds]]
+name = "RBN"
+host = "telnet.reversebeacon.net"
+port = 7000                      # CW + RTTY skimmer spots: the main source
+enabled = true
+
+[[feeds]]
+name = "S50CLX"
+host = "s50clx.s50e.si"
+port = 41112
+enabled = true
+
+[[feeds]]
+name = "S50DXS"
+host = "s50dxs.s53m.com"
+port = 8000
+enabled = true
+
+[[feeds]]
+name = "GB7DXG"
+host = "gb7dxg.lebs.org.uk"
+port = 7373
+enabled = true
+
+[[feeds]]
+name = "VE7CC"
+host = "ve7cc.net"
+port = 23
+enabled = true
+init = []                        # commands sent after login, e.g. ["set/noskimmer"]
+
+[[feeds]]
+name = "W3LPL"
+host = "dxc.w3lpl.net"
+port = 7373
+enabled = true
+
+# Spares
+[[feeds]]
+name = "OE9XFP"
+host = "cluster.oe9.at"
+port = 7373
+enabled = false                  # never connected during WAE RTTY 2026
+
+[[feeds]]
+name = "K9LC"
+host = "k9lc.ddns.net"
+port = 7300
+enabled = false
+
+[[feeds]]
+name = "W9PA"
+host = "dxc.w9pa.net"
+port = 7374
+enabled = false

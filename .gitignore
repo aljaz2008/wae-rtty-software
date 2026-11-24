@@ -1,0 +1,22 @@
+# your personal settings and data (copy config.example.toml -> config.toml)
+config.toml
+cty.dat
+wl_cty.dat
+qtc_ledger.json
+qtc_ledger.json.tmp
+skimmers.csv
+*.s3db
+
+# python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# os / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

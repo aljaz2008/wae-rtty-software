@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WAE RTTY Intel</title>
+<style>
+:root{--bg:#0e1116;--pn:#161b22;--ln:#2a313c;--tx:#d7dde5;--mu:#8590a0;--ac:#4cc2ff;--ok:#3fb950;--wa:#d29922;--bad:#f85149;--hot:#ff7b72}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:13px/1.35 ui-monospace,Consolas,Menlo,monospace}
+header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:8px 12px;background:var(--pn);border-bottom:1px solid var(--ln);position:sticky;top:0;z-index:5}
+header b{color:var(--ac)}.k{color:var(--mu)}.pill{padding:1px 7px;border-radius:9px;background:#21262d}
+main{display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:10px;padding:10px}
+section{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:8px 10px;overflow:auto;max-height:520px}
+section.wide{grid-column:1/-1;max-height:none}
+h2{font-size:13px;margin:0 0 6px;color:var(--ac);letter-spacing:.5px;text-transform:uppercase}
+table{border-collapse:collapse;width:100%}th,td{padding:2px 5px;text-align:left;white-space:nowrap}
+th{color:var(--mu);font-weight:normal;border-bottom:1px solid var(--ln);position:sticky;top:0;background:var(--pn)}
+tr:hover td{background:#1c2330}.call{color:#fff;cursor:pointer;text-decoration:underline dotted}
+.heat td.c{text-align:center;min-width:34px;border:1px solid #0e1116;font-size:11px}
+.best{outline:2px solid var(--ac)}.v4{color:var(--hot);font-weight:bold}.v3{color:var(--wa);font-weight:bold}
+.fresh{animation:fl 1.5s 3}@keyframes fl{50%{background:#5a1e1e}}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.wa{color:var(--wa)}.mu{color:var(--mu)}
+#rosewrap{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}canvas{background:#0b0e13;border-radius:8px}
+.reco{font-size:15px;margin:4px 0 8px}.reco b{font-size:18px}
+input,button{background:#0b0e13;color:var(--tx);border:1px solid var(--ln);border-radius:5px;padding:3px 6px;font:inherit}
+button{cursor:pointer}button:hover{border-color:var(--ac)}
+#pop{position:fixed;right:12px;top:60px;width:360px;background:var(--pn);border:1px solid var(--ac);border-radius:8px;padding:10px;display:none;z-index:9}
+.tabs button.on{border-color:var(--ac);color:var(--ac)}
+</style>
+</head>
+<body>
+<header>
+ <span><b id="mycall">WAE RTTY Intel</b></span>
+ <span id="utc" class="pill"></span>
+ <span><span class="k">Radio</span> <span id="radio">—</span></span>
+ <span><span class="k">Rate</span> <span id="rate">—</span></span>
+ <span><span class="k">Op</span> <span id="op">—</span></span>
+ <span><span class="k">Mults</span> <span id="mults">—</span></span>
+ <span><span class="k">QTC</span> <span id="qtc">—</span></span>
+ <span><span class="k">Sun</span> <span id="sun">—</span></span>
+ <span><span class="k">SFI/A/K</span> <span id="solar">—</span></span>
+ <label class="mu"><input type="checkbox" id="snd" checked> sound</label>
+ <span id="conn" class="pill bad">offline</span>
+</header>
+<main>
+ <section class="wide">
+  <h2>Where to point &amp; which band</h2>
+  <div id="reco" class="reco"></div>
+  <div id="rosewrap">
+   <canvas id="rose" width="300" height="300"></canvas>
+   <div style="flex:1;min-width:420px;overflow:auto"><table class="heat" id="heat"></table>
+   <div class="mu" style="margin-top:4px">Cell = sector score (H: DX heard by skimmers near you · P: far skimmers hearing EU · M: skimmers hearing <b>you</b> ×2). Click band row for rose.</div></div>
+  </div>
+ </section>
+ <section><h2>New mult alerts <span class="mu">(80×4 · 40×3 · 20/15/10×2)</span></h2><table id="alerts"></table></section>
+ <section><h2>Who hears me (RBN)</h2><table id="me"></table></section>
+ <section><h2>QTC targets <span class="mu">non-EU, room left</span></h2>
+  <div style="margin-bottom:6px">Manual QTC (only if N1MM DB has no QTC data): <input id="qcall" size="9" placeholder="call"> sent <input id="qs" size="2" value="10"> rcvd <input id="qr" size="2" value="0"> <button onclick="logQtc()">add</button> <span id="qmsg" class="mu"></span></div>
+  <table id="qtct"></table></section>
+ <section><h2>Rivals</h2><table id="rivals"></table></section>
+ <section><h2>Off-time tracker</h2><div id="offt"></div></section>
+ <section><h2>Feeds</h2><table id="feeds"></table><div id="stat" class="mu" style="margin-top:6px"></div></section>
+ <section class="wide"><h2>Projected score &amp; standings</h2>
+  <div id="proj"></div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+   <div style="flex:1;min-width:420px"><table id="stand"></table></div>
+   <div style="flex:1;min-width:380px"><div id="targets"></div></div>
+  </div>
+ </section>
+ <section class="wide"><h2>Computer &amp; program statistics</h2>
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+   <div style="flex:1;min-width:300px"><table id="sys"></table></div>
+   <div style="flex:1;min-width:300px"><table id="pipe"></table></div>
+   <div style="flex:1;min-width:360px"><table id="feedstat"></table></div>
+  </div>
+ </section>
+ <section><h2>Lookup</h2><input id="lk" placeholder="callsign" size="12" onkeydown="if(event.key==='Enter')look(this.value)"> <button onclick="look(lk.value)">go</button><pre id="lkout" style="white-space:pre-wrap"></pre></section>
+</main>
+<div id="pop"><button style="float:right" onclick="pop.style.display='none'">×</button><pre id="popout" style="white-space:pre-wrap;margin:0"></pre><div id="popbtn" style="margin-top:8px"></div></div>
+<div id="toast" style="position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--pn);border:2px solid var(--ok);border-radius:8px;padding:8px 14px;display:none;z-index:20;font-weight:bold"></div>
+<script>
+let S=null, selBand=null, seenFresh=new Set();
+const $=id=>document.getElementById(id);
+const age=s=>s<60?s+'s':Math.round(s/60)+'m';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cl=(c,f,brg,b)=>`<span class="call" title="${f?'click: QSY to '+f.toFixed(1)+' kHz':'click: details'}" onclick="pick('${esc(c)}',${f||0},${brg??'null'},${b||0})">${esc(c)}</span>`;
+let toastT=null;
+function toast(msg,ok=true){const t=$('toast');t.textContent=msg;t.style.borderColor=ok?'var(--ok)':'var(--bad)';t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',3500)}
+async function qsy(freq,brg,band,rotate){try{const r=await (await fetch('/api/qsy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({freq,azimuth:brg,band,rotate})})).json();
+ const m=[r.qsy&&r.qsy.msg,r.rotor&&r.rotor.msg].filter(Boolean).join(' · ');toast(m||'nothing sent',!(r.qsy&&!r.qsy.ok))}catch(e){toast('QSY failed: '+e,false)}}
+function pick(c,f,brg,b){const C=(S&&S.control)||{};if(f&&C.qsy_on_click)qsy(f,brg,b,!!C.rotate_on_click);look(c,1,f,brg,b)}
+function beep(f=880){if(!$('snd').checked)return;try{const a=new AudioContext(),o=a.createOscillator(),g=a.createGain();o.frequency.value=f;o.connect(g);g.connect(a.destination);g.gain.value=.08;o.start();o.stop(a.currentTime+.18)}catch(e){}}
+function connect(){
+ const ws=new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');
+ ws.onopen=()=>{$('conn').textContent='live';$('conn').className='pill ok'};
+ ws.onclose=()=>{$('conn').textContent='offline';$('conn').className='pill bad';setTimeout(connect,3000)};
+ ws.onmessage=e=>{S=JSON.parse(e.data);render()};
+}
+function heatColor(v,max){if(!v)return '#11161d';const t=Math.min(1,v/Math.max(max,1));return `hsl(${200-200*t},80%,${18+32*t}%)`}
+function render(){
+ $('mycall').textContent=S.mycall+' · WAE RTTY Intel';$('utc').textContent=S.utc;
+ const r=S.radio||{};$('radio').textContent=r.khz?`${r.khz.toFixed(1)} kHz (${r.band}m) ${r.mode||''}`:'—';
+ $('rate').textContent=`${S.rate.r10}/h (10m) · ${S.rate.r60} last h · ${S.rate.total} QSO`;
+ const o=S.optime;$('op').innerHTML=`${o.used_h}h used · <b class="${o.left_h<2?'bad':''}">${o.left_h}h left</b>`;
+ $('mults').textContent=Object.entries(S.mults).map(([b,n])=>`${b}:${n}`).join(' ')+` · w=${S.weighted_mults} · score≈${S.score.est.toLocaleString()} (${S.score.points} pts)`;
+ $('qtc').textContent=`${S.qtc.total} (S ${S.qtc.sent} R ${S.qtc.rcvd}${S.qtc.unknown_dir?' ?'+S.qtc.unknown_dir:''}) · stock≈${S.qtc.stock_est} · ${S.qtc.source}`;
+ $('sun').textContent=`${S.sun.state} · SR ${S.sun.rise}Z SS ${S.sun.set}Z`;
+ const so=S.solar||{};$('solar').textContent=so.sfi?`${so.sfi}/${so.a}/${so.k}`:'—';
+ // recommendation
+ const byB=Object.fromEntries(S.bands.map(b=>[b.band,b]));
+ const top=S.ranked.slice(0,3).map(b=>byB[b]);
+ $('reco').innerHTML=top.map((b,i)=>`${i?'':'▶ '}<b>${b.band}m</b> → ${b.heading!=null?`<b>${b.heading}°</b> ${b.compass}`:'<span class=mu>no dir data</span>'} <span class="mu">(workable ≈${b.unworked_eff} of ${b.unworked} unworked · new mults ≈${b.new_mults_eff} of ${b.new_mults} (1 mult = ${b.mult_eq} QSOs) · ${b.new_mults_here} heard here · QTC ${b.qtc_val} · heard me: ${b.me_count})</span>`).join('<br>');
+ // heat
+ const n=360/S.sector;let max=0;S.bands.forEach(b=>b.cells.forEach(c=>max=Math.max(max,c.score)));
+ let h='<tr><th>band</th>'+[...Array(n)].map((_,i)=>`<th>${i*S.sector}°</th>`).join('')+'<th>best</th><th>hear (cont)</th><th>path out</th><th>act</th></tr>';
+ for(const b of S.bands){
+  h+=`<tr onclick="selBand=${b.band};render()" style="cursor:pointer"><td><b>${b.band}m</b> <span class=mu>×${b.weight}</span></td>`+
+   b.cells.map(c=>`<td class="c ${c.from===b.best_from&&b.best_score>0?'best':''}" style="background:${heatColor(c.score,max)}" title="H${c.h} P${c.p} M${c.me} snr ${c.snr??'-'}">${c.score||''}${c.me?'<sup>★</sup>':''}</td>`).join('')+
+   `<td>${b.heading??'—'}° ${b.compass}</td><td>${Object.entries(b.hear_cont).map(([k,v])=>k+':'+v).join(' ')}</td><td>${Object.entries(b.path_cont).map(([k,v])=>k+':'+v).join(' ')}</td><td>${b.activity}</td></tr>`;
+ }
+ $('heat').innerHTML=h;
+ drawRose(byB[selBand||S.ranked[0]]);
+ // alerts
+ let fresh=false;
+ $('alerts').innerHTML='<tr><th>band</th><th>call</th><th>kHz</th><th>mult</th><th>cont</th><th>beam</th><th>sun</th><th>heard</th><th>snr</th><th>≈QSO</th><th>sp</th><th>age</th></tr>'+
+  S.alerts.map(a=>{const k=a.pfx+a.band;let f='';if(a.fresh&&!seenFresh.has(k)){seenFresh.add(k);if(a.value>=3)fresh=true;f='fresh'}
+   return `<tr class="${f}" style="${a.aud<0.25?'opacity:.4':''}"><td class="v${a.value}" title="worth ≈${a.eq} QSOs now">${a.band}m×${a.value}</td><td>${cl(a.dx,a.freq,a.brg,a.band)}${a.cq?' <span class=ok>CQ</span>':''}</td><td>${a.freq.toFixed(1)}</td><td title="${esc(a.name)}">${esc(a.pfx)}</td><td>${a.cont}</td><td>${a.brg}° <span class=mu>LP ${a.lp}</span></td><td>${a.sun}</td><td class="${a.why==='here'?'ok':a.aud<0.25?'mu':'wa'}">${a.why}</td><td>${a.snr??''}</td><td>${a.eq}</td><td>${a.spotters}${a.human?'+h':''}</td><td>${age(a.age_s)}</td></tr>`}).join('');
+ if(fresh)beep(1200);
+ // me
+ $('me').innerHTML='<tr><th>band</th><th>skimmer</th><th>cont</th><th>beam</th><th>km</th><th>snr</th><th>age</th></tr>'+
+  S.my_heard.map(m=>`<tr><td>${m.band}m</td><td>${esc(m.skimmer)}</td><td>${m.cont}</td><td>${m.brg}°</td><td>${m.km}</td><td class="${m.snr>=20?'ok':m.snr<8?'wa':''}">${m.snr??''}</td><td>${age(m.age_s)}</td></tr>`).join('')||'<tr><td class=mu>No RBN spots of you yet — CQ and skimmers will show up here.</td></tr>';
+ // qtc
+ $('qtct').innerHTML='<tr><th>call</th><th>band</th><th>kHz</th><th>cont</th><th>room</th><th>worked</th><th>beam</th><th>heard</th><th>age</th></tr>'+
+  S.qtc_targets.map(q=>`<tr><td>${cl(q.dx,q.freq,q.brg,q.band)}${q.cq?' <span class=ok>CQ</span>':''}</td><td>${q.band}m</td><td>${q.freq.toFixed(1)}</td><td>${q.cont}</td><td>${q.room}</td><td>${q.worked_band?'<span class=ok>band</span>':q.worked_any?'other':'<span class=wa>new</span>'}</td><td>${q.brg}°</td><td class="${q.why==='here'?'ok':q.aud<0.25?'mu':'wa'}">${q.why}</td><td>${age(q.age_s)}</td></tr>`).join('');
+ // rivals
+ $('rivals').innerHTML='<tr><th>call</th><th>band</th><th>kHz</th><th>mode</th><th>heard by</th><th>score</th><th>Q</th><th>rate</th><th>age</th></tr>'+
+  (S.rivals.length?S.rivals.map(r=>{const sb=r.sb||{};return `<tr><td>${cl(r.call,r.freq,null,r.band)}</td><td>${r.band?r.band+'m':'—'}${r.bands_seen&&r.bands_seen.length>1?' <span class=mu>('+r.bands_seen.join(',')+')</span>':''}</td><td>${r.freq?r.freq.toFixed(1):''}</td><td>${r.band?(r.cq?'<span class=ok>RUN</span>':'S&P?'):''}</td><td>${Object.entries(r.heard_by||{}).map(([k,v])=>k+':'+v).join(' ')}</td><td>${sb.score??''}</td><td>${sb.qsos??''}</td><td>${sb.rate10??''}${sb.active_band?' <span class=mu>'+sb.active_band+'m</span>':''}</td><td>${r.age_s!=null?age(r.age_s):''}</td></tr>`}).join(''):'<tr><td class=mu>Add rival calls in config.toml [rivals]</td></tr>');
+ // off time
+ $('offt').innerHTML=`<div>Used <b>${o.used_h} h</b> of 36 · left <b>${o.left_h} h</b> · off so far ${o.off_total_h} h</div>
+  <div>Current gap since last QSO/QTC: <b class="${o.gap_is_off?'ok':o.gap_min>40?'wa':''}">${o.gap_min} min</b> ${o.gap_is_off?'(counts as OFF)':o.gap_min>5?'(needs ≥60, aim 62+)':''}</div>
+  <div class=mu>${o.offs.join('<br>')||'no off periods yet'}</div>`;
+ // feeds
+ $('feeds').innerHTML='<tr><th>feed</th><th>state</th><th>spots</th><th>err</th><th>last</th></tr>'+S.feeds.map(f=>`<tr><td>${esc(f.name)}</td><td class="${f.state==='online'?'ok':'wa'}">${esc(f.state)}</td><td>${f.spots}</td><td title="${esc(f.last_error)}">${f.errors}</td><td>${f.last_line?age(Math.round(Date.now()/1000-f.last_line)):''}</td></tr>`).join('');
+ renderProj();renderStats();
+ $('stat').textContent=Object.entries(S.status).map(([k,v])=>k+': '+v).join(' · ');
+}
+const fmt=n=>n==null?'—':Math.round(n).toLocaleString();
+function bar(v,max,warn,bad){const p=Math.min(100,100*(v||0)/max);const c=v>=bad?'var(--bad)':v>=warn?'var(--wa)':'var(--ok)';return `<span style="display:inline-block;width:90px;height:8px;background:#21262d;border-radius:4px;vertical-align:middle"><span style="display:block;height:8px;width:${p}%;background:${c};border-radius:4px"></span></span>`}
+function kv(rows){return rows.map(([k,v])=>`<tr><td class=mu>${k}</td><td>${v}</td></tr>`).join('')}
+function renderProj(){
+ const P=S.projection;if(!P)return;
+ $('proj').innerHTML=`<div class="reco">Now <b>${fmt(P.now)}</b> <span class=mu>(${P.points} pts × ${P.wmults} w-mults)</span> → projected final <b style="color:var(--ac)">${fmt(P.final)}</b>
+  <span class=mu>= ${fmt(P.p_final)} pts × ${fmt(P.w_final)} w-mults · ${P.p_rate} pts/h, +${P.w_rate} w-mults/h · ${P.rem_op_h} op-h left${P.score_rate!=null?' · score rate '+fmt(P.score_rate)+'/h':''}</span></div>
+  <div class=mu>Model: points rate of the last hour × remaining operating hours; mult rate decaying over time (new mults get rarer). Confidence: <span class="${P.confidence==='ok'?'ok':'wa'}">${P.confidence}</span> · your planning estimate ${fmt(P.expected_final)}.</div>`;
+ const T=S.standings;
+ if(!T.available){$('stand').innerHTML=`<tr><td class=mu>No scoreboard data (${esc(T.status)}). Set [scoreboard] url in config.toml.</td></tr>`;$('targets').innerHTML='';return}
+ $('stand').innerHTML=`<tr><th>#</th><th>call</th><th>score</th><th>Δ vs me</th><th>Q</th><th>mults</th><th>score/h</th><th>proj. final</th></tr>`+
+  T.rows.map(r=>`<tr style="${r.me?'background:#12324a':''}"><td>${r.rank}</td><td>${r.me?'<b>'+esc(r.call)+'</b>':cl(r.call)}${r.rival?' <span class=wa>★</span>':''}</td><td>${fmt(r.score)}</td><td class="${r.me?'':(r.score>T.my_score?'bad':'ok')}">${r.me?'':(r.score>T.my_score?'+':'')+fmt(r.score-T.my_score)}</td><td>${fmt(r.qsos)}</td><td>${fmt(r.mults)}</td><td>${fmt(r.rate)}</td><td>${fmt(r.proj)}</td></tr>`).join('');
+ $('targets').innerHTML=`<div class="reco">Rank <b>${T.my_rank}</b> of ${T.of} <span class=mu>(${esc(T.category)})</span> · projected finish <b>#${T.my_proj_rank}</b>${T.on_board?'':' <span class=wa>(you are not on the scoreboard: using live estimate)</span>'}</div>`+
+  (T.targets.length?T.targets.map(t=>`<div style="margin:6px 0;padding:6px 8px;border:1px solid var(--ln);border-radius:6px"><span class=mu>${esc(t.label)}:</span> <b>${esc(t.call)}</b> — need <b>+${fmt(t.gap)}</b> points<br>
+   ≈ <b>${fmt(t.qsos)}</b> QSOs/QTCs${t.m80<=40?` <span class=mu>or</span> <b>${t.m80}</b> new 80m mults <span class=mu>or</span> ${t.m40} on 40m <span class=mu>or</span> ${t.m20} on 20/15/10m`:' <span class=mu>(too far to close with mults alone)</span>'}${t.catch_h!=null?`<br><span class=ok>at current rates you pass in ~${t.catch_h} h</span>`:''}</div>`).join(''):'<div class=ok>You are leading. Keep the rate up.</div>')+
+  `<div class=mu>Others' projection assumes they operate ${Math.round(T.duty*100)}% of remaining time at their last-30-min score rate.</div>`;
+}
+function renderStats(){
+ const X=S.stats;if(!X)return;const p=X.proc;
+ $('sys').innerHTML='<tr><th colspan=2>Computer</th></tr>'+kv([
+  ['program CPU',`${bar(p.cpu_pct,100,50,85)} ${p.cpu_pct??'—'} % <span class=mu>(of 1 core, ${p.cores} cores)</span>`],
+  ['program RAM',`${bar(p.rss_mb,500,250,400)} ${p.rss_mb} MB`],
+  ...(p.sys_cpu_pct!=null?[['system CPU',`${bar(p.sys_cpu_pct,100,60,85)} ${p.sys_cpu_pct} %`],['system RAM',`${bar(p.sys_ram_pct,100,75,90)} ${p.sys_ram_pct} % · ${fmt(p.sys_ram_free_mb)} MB free`]]:[['system CPU/RAM','<span class=mu>install psutil to see</span>']]),
+  ['event-loop lag',`${bar(X.loop_lag_ms,500,100,300)} ${X.loop_lag_ms??'—'} ms <span class=mu>(max ${X.loop_lag_max??'—'})</span>`],
+  ['dashboard compute',`${bar(X.snap_ms,2000,500,1500)} ${X.snap_ms} ms <span class=mu>(avg ${X.snap_ms_avg}, max ${X.snap_ms_max})</span>`],
+  ['uptime',`${X.uptime_min} min · Python ${p.python} · ${p.platform}`]]);
+ $('pipe').innerHTML='<tr><th colspan=2>Data pipeline</th></tr>'+kv([
+  ['spots/min',`<b>${X.spots_per_min}</b> <span class=mu>(5-min avg ${X.spots_per_min_5})</span>`],
+  ['lines in / spots used',`${fmt(X.lines_in)} / ${fmt(X.ingested)}`],
+  ['propagation spots kept',fmt(X.prop_kept)],['live RTTY targets',fmt(X.targets_live)],
+  ['QSOs loaded',`${fmt(X.qsos_loaded)} <span class=mu>· N1MM DB read ${X.db_ms??'—'} ms · UDP pkts ${X.udp_packets}</span>`],
+  ['scoreboard',`${X.scoreboard_ms??'—'} ms · ${X.scoreboard_age_s!=null?X.scoreboard_age_s+' s ago':'—'}`],
+  ['caches',`call ${fmt(X.where_cache)} · cty ${fmt(X.cty_cache)} · HamQTH ${X.hamqth_cache} (queue ${X.hamqth_queue})`],
+  ['dashboard clients',`${X.ws_clients} live · ${X.http_snapshots} API calls`]]);
+ $('feedstat').innerHTML='<tr><th>feed</th><th>state</th><th>up</th><th>spots</th><th>data</th><th>reconn.</th></tr>'+X.feeds.map(f=>`<tr><td>${esc(f.name)}</td><td class="${f.state==='online'?'ok':'wa'}">${esc(f.state)}</td><td>${f.up_min!=null?f.up_min+'m':'—'}</td><td>${fmt(f.spots)}</td><td>${fmt(f.kb)} kB</td><td class="${f.reconnects>3?'wa':''}">${f.reconnects}</td></tr>`).join('');
+}
+function drawRose(b){
+ const c=$('rose'),x=c.getContext('2d'),W=c.width,R=W/2-24;x.clearRect(0,0,W,W);if(!b)return;
+ x.save();x.translate(W/2,W/2);x.strokeStyle='#2a313c';
+ for(let r=R/3;r<=R+1;r+=R/3){x.beginPath();x.arc(0,0,r,0,7);x.stroke()}
+ const max=Math.max(1,...b.cells.map(c=>c.score));const sec=S.sector*Math.PI/180;
+ b.cells.forEach(cel=>{const a0=cel.from*Math.PI/180-Math.PI/2;const rr=R*Math.sqrt(cel.score/max);
+  x.beginPath();x.moveTo(0,0);x.arc(0,0,rr,a0,a0+sec);x.closePath();x.fillStyle=heatColor(cel.score,max);x.fill();
+  if(cel.me){x.fillStyle='#ffd33d';const am=a0+sec/2;x.fillText('★',Math.cos(am)*(rr+8)-4,Math.sin(am)*(rr+8)+4)}});
+ if(b.heading!=null){const a=b.heading*Math.PI/180-Math.PI/2;x.strokeStyle='#4cc2ff';x.lineWidth=3;x.beginPath();x.moveTo(0,0);x.lineTo(Math.cos(a)*R,Math.sin(a)*R);x.stroke()}
+ x.fillStyle='#8590a0';x.font='11px monospace';[['N',0],['E',90],['S',180],['W',270]].forEach(([t,d])=>{const a=d*Math.PI/180-Math.PI/2;x.fillText(t,Math.cos(a)*(R+12)-4,Math.sin(a)*(R+12)+4)});
+ x.restore();x.fillStyle='#d7dde5';x.font='bold 13px monospace';x.fillText(`${b.band}m  ${b.heading??'—'}°`,8,16);
+}
+async function look(c,popup,f,brg,b){c=(c||'').trim();if(!c)return;const d=await (await fetch('/api/lookup?call='+encodeURIComponent(c))).json();
+ if(popup){const C=(S&&S.control)||{};const live=(d.spots||[]).sort((x,y)=>x.age_s-y.age_s);const fr=f||(live[0]&&live[0].freq);const bd=b||(live[0]&&live[0].band);
+  const sp=d.cty?Math.round(d.cty.brg):null;let h='';
+  if(fr)h+=`<button onclick="qsy(${fr},${sp},${bd||0},false)">QSY ${fr.toFixed(1)}</button> `;
+  if(C.rotator&&C.rotator!=='none'&&sp!=null)h+=`<button onclick="qsy(0,${sp},${bd||0},true)">Beam SP ${sp}°</button> <button onclick="qsy(0,${d.lp},${bd||0},true)">Beam LP ${d.lp}°</button> `;
+  if(fr&&C.rotator&&C.rotator!=='none'&&sp!=null)h+=`<button onclick="qsy(${fr},${sp},${bd||0},true)">QSY + beam</button>`;
+  $('popbtn').innerHTML=h;}
+ const t=d.cty?`${d.call}  ${d.cty.name} (${d.cty.pfx}) ${d.cty.cont} CQ${d.cty.cq}\nBeam SP ${Math.round(d.cty.brg)}°  LP ${d.lp}°  ${Math.round(d.cty.dist)} km  sun: ${d.sun}\nWorked on: ${d.worked.join(', ')||'—'}\nQTC: ${d.qtc.total} (sent ${d.qtc.sent} rcvd ${d.qtc.rcvd}) · room ${10-d.qtc.total}\nLive: ${d.spots.map(s=>s.band+'m '+s.freq.toFixed(1)+(s.cq?' CQ':'')+' '+age(s.age_s)).join(' | ')||'—'}\n${d.hamqth?('HamQTH: '+[d.hamqth.name,d.hamqth.qth,d.hamqth.grid].filter(Boolean).join(', ')):''}`:'not found';
+ if(popup){$('popout').textContent=t;$('pop').style.display='block';$('qcall').value=d.call}else $('lkout').textContent=t;}
+async function logQtc(){const call=$('qcall').value.trim();if(!call)return;
+ const r=await (await fetch('/api/qtc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({call,sent:+$('qs').value||0,rcvd:+$('qr').value||0})})).json();
+ $('qmsg').textContent=r.error||`${r.call}: sent ${r.sent} rcvd ${r.rcvd}`;}
+connect();
+</script>
+</body>
+</html>
